@@ -1,183 +1,148 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import requests
-from bs4 import BeautifulSoup
 import re
-from matplotlib import pyplot as plt
-
-# Function to get top picks titles and links
-def get_top_picks():
-    url = 'https://www.imdb.com/chart/top'  # URL to IMDb Top 250
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    movies = soup.select('td.titleColumn')
-    links = [a.attrs.get('href') for a in soup.select('td.titleColumn a')]
-    titles = [a.text for a in soup.select('td.titleColumn a')]
-    
-    top_picks = pd.DataFrame({
-        'Title': titles,
-        'Link': ['https://www.imdb.com' + link for link in links]
-    })
-    
-    return top_picks
-
-# Function to get box office data and technical specs from a movie detail page
-def get_movie_details(movie_url):
-    response = requests.get(movie_url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    # Extract Box Office Data
-    box_office_data = {}
-    box_office_section = soup.find('section', {'data-testid': 'BoxOffice'})
-    if box_office_section:
-        for div in box_office_section.find_all('div'):
-            key = div.find('span', class_='ipc-metadata-list-item__label').text
-            value = div.find('span', class_='ipc-metadata-list-item__list-content-item').text
-            box_office_data[key] = value
-    
-    # Extract Technical Specs
-    tech_specs_data = {}
-    tech_specs_section = soup.find('section', {'data-testid': 'TechSpecs'})
-    if tech_specs_section:
-        for div in tech_specs_section.find_all('div'):
-            key = div.find('span', class_='ipc-metadata-list-item__label').text
-            value = div.find('span', class_='ipc-metadata-list-item__list-content-item').text
-            tech_specs_data[key] = value
-    
-    return box_office_data, tech_specs_data
-
-# Read CSV files into dataframes
-df = pd.read_csv('imdb_combined_data2.csv')
-
-df['Rating'] = df['Rating'].astype("string")
-df['Name'] = df['Name'].astype("string")
-df['Year'] = pd.to_numeric(df['Year'])
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.service import Service
+from datetime import datetime
+from bs4 import BeautifulSoup
 
 # Set page title and favicon
-st.set_page_config(page_title="IMDb Movie Dashboard", page_icon=":clapper:")
+st.set_page_config(page_title="IMDb Movie Data", page_icon=":clapper:")
 
-# Sidebar
-st.sidebar.title("Navigation")
-page = st.sidebar.selectbox("Select a page", ["Top Picks", "List of Films", "Dashboard"])
+# File paths
+filename = "imdb_primary_data.csv"
+filename2 = "imdb_secondary_data.csv"
 
-# Main content
-if page == "Top Picks":
-    # ACTION 1: Get all titles and movie links from TOP PICKS
-    st.title("Top Picks Titles and Links")
-    top_picks = get_top_picks()
-    st.dataframe(top_picks)
-    
-    # ACTION 2: Access movie detail pages to extract Box Office Data and Technical Specs
-    st.title("Movie Details from Top Picks")
-    details_list = []
-    for index, row in top_picks.iterrows():
-        title = row['Title']
-        link = row['Link']
-        box_office_data, tech_specs_data = get_movie_details(link)
-        details_list.append({
-            'Title': title,
-            'Box Office Data': box_office_data,
-            'Technical Specs': tech_specs_data
-        })
+# Function to read primary data
+def read_primary_data():
+    df = pd.read_csv(filename)
+    return df
 
-    details_df = pd.DataFrame(details_list)
-    st.dataframe(details_df)
-    
-elif page == "List of Films":
-    # Display list of films from imdb_primary_data.csv
-    st.title("List of Films")
-    primary_data = pd.read_csv('imdb_primary_data.csv')
-    film_selection = st.radio("Select a film", primary_data['Name'].tolist())
+# Function to read secondary data
+def read_secondary_data():
+    df = pd.read_csv(filename2)
+    return df
 
-    # Get the link to the movie detail page from secondary data
-    secondary_data = pd.read_csv('imdb_secondary_data.csv')
-    selected_movie = secondary_data.loc[secondary_data['Name'] == film_selection]
+# Function to fetch data from IMDb and save to CSV
+def fetch_imdb_data():
+    # the first page to be accessed
+    my_url = "http://www.imdb.com/search/title?sort=num_votes,desc&start=1&title_type=feature&year=2024,2024"
 
-    if not selected_movie.empty:
-        movie_url = selected_movie['Link'].values[0]
+    # define browser to get the first URL
+    browser = webdriver.Firefox()
 
-        st.title(f"{film_selection} Details")
-        st.markdown(f"IMDb Link: [{film_selection}]({movie_url})")
+    # define browser to get the second/detail URL
+    browser2 = webdriver.Firefox()
 
-        box_office_data, tech_specs_data = get_movie_details(movie_url)
+    # check file availability and content is not empty
+    if filename in os.listdir():
+        os.remove(filename)
+    if filename2 in os.listdir():
+        os.remove(filename2)
 
-        st.subheader("Box Office Data:")
-        st.write(box_office_data)
+    f = open(filename, "w")
+    fheaders = "Name,Year,Durasi(Menit),Rating\n"
+    f2 = open(filename2, "w")
+    f2headers = "Name,Budget,Gross_US,Opening_Week,Open_Week_Date,Gross_World\n"
 
-        st.subheader("Technical Specs:")
-        st.write(tech_specs_data)
-    else:
-        st.warning("Movie details not found.")
-        
-elif page == "Dashboard":
-    # 1. COMPARISON CHART - BAR CHART
-    st.title("1. COMPARISON CHART - BAR CHART")
-    df_sel = df[['Rating','Gross_US', 'Gross_World']].sort_values(by=['Rating'])
+    f.write(fheaders)
+    f2.write(f2headers)
 
-    # Drop rows with all zeros
-    hsl = df_sel.loc[(df_sel[['Gross_US', 'Gross_World']] != 0).all(axis=1)]
+    try:
+        # open session for first URL
+        browser.get(my_url)
 
-    # Prepare the chart data from panda dataframe for BAR CHART
-    chart_data = pd.DataFrame(
-        {
-            "Rating": hsl['Rating'], "Gross US": hsl['Gross_US'], "Gross World":hsl['Gross_World']
-        }
-    )
+        # ACTION 1
+        first_page = BeautifulSoup(browser.page_source ,'html.parser')
+        movies = first_page.find_all("div", {"class":"sc-b189961a-0 hBZnfJ"})
 
-    # BAR CHART
-    st.bar_chart(
-       chart_data, x="Rating", y=["Gross US", "Gross World"], color=["#FF0000", "#0000FF"]
-    )
+        count2 = 0
+        for movie in movies:
+            count2 += 1
+            menit = 0
+            rating = "Not Rated"
+            name = re.sub(r"\d+. ","", movie.find("h3", {"class": "ipc-title__text"}).text)
+            detil_line = movie.findAll("span", {"class": "sc-b189961a-8 kLaxqf dli-title-metadata-item"})
+            if len(detil_line) > 2:
+                year_movie = detil_line[0].text
+                durasi = detil_line[1].text
+                durasi = durasi.split(" ")
+                if len(durasi) > 1:
+                    menit = int(durasi[0].replace("h","")) * 60 + int(durasi[1].replace("m",""))
+                else:
+                    menit = int(durasi[0].replace("h","")) * 60
+                rating = detil_line[2].text
+            elif len(detil_line) > 1:
+                year_movie = detil_line[0].text
+                durasi = detil_line[1].text
+                durasi = durasi.split(" ")
+                if len(durasi) > 1:
+                    menit = int(durasi[0].replace("h","")) * 60 + int(durasi[1].replace("m",""))
+                else:
+                    menit = int(durasi[0].replace("h","")) * 60
+            else:
+                year_movie = detil_line[0].text
 
-    # 2. RELATIONSHIP CHART - SCATTER PLOT
-    st.title("2. RELATIONSHIP CHART - SCATTER PLOT")
-    df_sel2 = df[['Gross_US','Gross_World','Durasi(Menit)','Budget','Rating']].sort_values(by=['Durasi(Menit)'])
+            f.write(name + "," + year_movie + "," + str(menit) + "," + rating + "\n")
 
-    # Drop rows with all zeros
-    hsl = df_sel2.loc[(df_sel2[['Gross_US', 'Gross_World']] != 0).all(axis=1)]
+        # ACTION 2
+        links = browser.find_elements(By.XPATH, '//div[@class="sc-b189961a-0 hBZnfJ"]')
 
-    # Scale down the numbers in 3 columns
-    hsl['Gross_US'] = hsl['Gross_US']/1000000
-    hsl['Gross_World'] = hsl['Gross_World']/1000000
-    hsl['Budget'] = hsl['Budget']/1000000
+        count = 0
+        for link in links:
+            title = re.sub(r"\d+. ","", link.find_element(By.CSS_SELECTOR, "a").get_attribute('aria-label'))
+            browser2.get(link.find_element(By.CSS_SELECTOR, "a").get_attribute('href'))
 
-    # Prepare the data for plotting
-    chart_data2 = pd.DataFrame(hsl, columns=["Gross_US", "Gross_World", "Durasi(Menit)", "Budget", "Rating"])
+            # BOX OFFICE DATA ON THE 2ND URL
+            det_page = browser2.page_source
+            container_rows = BeautifulSoup(det_page, "html.parser")
+            box_office_elements = container_rows.find("div",{"data-testid":"title-boxoffice-section"})
+            if box_office_elements is not None:
+                det_movie = box_office_elements.find_all("span",{"class":"ipc-metadata-list-item__list-content-item"})
 
-    # SCATTER PLOT
-    st.scatter_chart(
-        chart_data2, 
-        x='Durasi(Menit)',
-        y=['Budget','Gross_US'],
-        size='Gross_World',
-        color=['#FF0000', '#0000FF']
-    )
+                if len(det_movie) > 4:
+                    budget = det_movie[0].text
+                    gross_us = det_movie[1].text
+                    open_week_rev = det_movie[2].text
+                    open_week_date = det_movie[3].text
+                    gross_world = det_movie[4].text
 
-    # 3. COMPOSITION CHART - DONUT CHART
-    st.title("3. COMPOSITION CHART - DONUT CHART")
-    df_sel3 = df[['Gross_US','Gross_World','Budget','Rating']].sort_values(by=['Rating'])
+                    budget_num = int(re.sub("[A-Z£€₹$,()a-z]","",budget))
+                    gross_us_num = int(re.sub("[A-Z£€₹$,()a-z]","",gross_us))
+                    open_week_rev_num = int(re.sub("[A-Z£€₹$,()a-z]","",open_week_rev))
+                    open_week_date_std = datetime.strptime(open_week_date, "%b %d, %Y")
+                    gross_world_num = int(re.sub("[A-Z£€₹$,()a-z]","",gross_world))
 
-    # Drop rows with all zeros
-    hsl = df_sel3.loc[(df_sel3[['Gross_US', 'Gross_World']] != 0).all(axis=1)]
-    hsl = hsl.groupby(['Rating']).sum()
+                    f2.write(str(title) + "," + str(budget_num) + "," + str(gross_us_num) + "," + str(open_week_rev_num) + "," + str(open_week_date_std) + "," + str(gross_world_num) + "\n")
 
-    # Creating plot
-    fig = plt.figure(figsize=(10, 7))
-    explode = [0,0.1,0,0.1]
-    plt.pie(hsl['Gross_US'], labels = hsl.index, explode = explode, autopct='%1.1f%%',
-            shadow=False, startangle=90)
-    plt.axis('equal')
+    except Exception as E:
+        st.error(f"Error: {E}")
 
-    # show plot
-    st.pyplot(fig)
+    finally:
+        f.close()
+        f2.close()
+        browser.quit()
+        browser2.quit()
 
-    # 4. DISTRIBUTION - LINE CHART
-    st.title("4. DISTRIBUTION - LINE CHART")
-    st.line_chart(
-        chart_data2, 
-        x='Durasi(Menit)',
-        y=['Budget','Gross_US'],
-        color=['#FF0000', '#0000FF']
-    )
+# Fetch data from IMDb if files are not present
+if not os.path.isfile(filename) or os.path.getsize(filename) == 0:
+    fetch_imdb_data()
+
+# Main Streamlit app
+st.title("IMDb Movie Data")
+
+# Select page
+page = st.selectbox("Select a page", ["Primary Data", "Secondary Data"])
+
+# Display primary data
+if page == "Primary Data":
+    st.subheader("Primary Data")
+    primary_df = read_primary_data()
+    st.write(primary_df)
+
+# Display secondary data
+elif page == "Secondary Data":
+    st.subheader("Secondary Data")
+    secondary_df = read_secondary_data()
+    st.write(secondary_df)
