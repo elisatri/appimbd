@@ -4,3 +4,5 @@ pandas
 pydeck
 streamlit
 matplotlib
+beautifulsoup4
+requests
