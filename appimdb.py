@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 import re
 import os
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.service import Service
-from datetime import datetime
 from bs4 import BeautifulSoup
 
 # Set page title and favicon
@@ -135,17 +134,23 @@ if not os.path.isfile(filename) or os.path.getsize(filename) == 0:
 # Main Streamlit app
 st.title("IMDb Movie Data")
 
-# Select page
-page = st.selectbox("Select a page", ["Primary Data", "Secondary Data"])
+# Read primary data
+primary_df = read_primary_data()
 
-# Display primary data
-if page == "Primary Data":
-    st.subheader("Primary Data")
-    primary_df = read_primary_data()
-    st.write(primary_df)
+# Display primary data as list
+st.subheader("Primary Data")
+for index, row in primary_df.iterrows():
+    st.write(f"{row['Name']} ({row['Year']}) - Duration: {row['Durasi(Menit)']} minutes, Rating: {row['Rating']}")
 
-# Display secondary data
-elif page == "Secondary Data":
-    st.subheader("Secondary Data")
-    secondary_df = read_secondary_data()
-    st.write(secondary_df)
+# Read secondary data
+secondary_df = read_secondary_data()
+
+# Display secondary data as list with clickable titles
+st.subheader("Secondary Data")
+for index, row in secondary_df.iterrows():
+    if st.button(f"{row['Name']}"):
+        st.write(f"**Budget**: {row['Budget']}")
+        st.write(f"**Gross US**: {row['Gross_US']}")
+        st.write(f"**Opening Week**: {row['Opening_Week']} (Date: {row['Open_Week_Date']})")
+        st.write(f"**Gross World**: {row['Gross_World']}")
+
