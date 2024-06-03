@@ -1,31 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
-import requests
-from bs4 import BeautifulSoup
-
-# Function to get top picks titles and links
-def get_top_picks():
-    url = 'https://www.imdb.com/chart/top'  # URL to IMDb Top 250
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    movies = soup.select('td.titleColumn')
-    links = [a.attrs.get('href') for a in soup.select('td.titleColumn a')]
-    titles = [a.text for a in soup.select('td.titleColumn a')]
-    
-    top_picks = pd.DataFrame({
-        'Title': titles,
-        'Link': ['https://www.imdb.com' + link for link in links]
-    })
-    
-    return top_picks
-
-# Function to get box office data and technical specs from …
-[06.23, 4/6/2024] elisa: import streamlit as st
-import pandas as pd
-import numpy as np
 import requests
 from bs4 import BeautifulSoup
 import re
