@@ -60,15 +60,15 @@ try:
 
     # 1. COMPARISON CHART - BAR CHART
     st.write("1. COMPARISON CHART - BAR CHART")
-    df_sel = df[['Rating','Gross_US', 'Gross_World']].sort_values(by=['Rating'])
+    df_sel = df[['Rating', 'Gross_US', 'Gross_World']].sort_values(by=['Rating'])
 
-    # Drop rows with all zeros
-    hsl = df_sel.loc[(df_sel[['Gross_US', 'Gross_World']] != 0).all(axis=1)]
+    # Drop rows with missing values
+    df_sel.dropna(subset=['Gross_US', 'Gross_World'], inplace=True)
 
     # Prepare the chart data for BAR CHART
     chart_data = pd.DataFrame(
         {
-            "Rating": hsl['Rating'], "Gross US": hsl['Gross_US'], "Gross World": hsl['Gross_World']
+            "Rating": df_sel['Rating'], "Gross US": df_sel['Gross_US'], "Gross World": df_sel['Gross_World']
         }
     )
 
@@ -79,35 +79,37 @@ try:
 
     # 2. RELATIONSHIP CHART - SCATTER PLOT
     st.write("2. RELATIONSHIP CHART - SCATTER PLOT")
-    df_sel2 = df[['Gross_US','Gross_World','Durasi(Menit)','Budget','Rating']].sort_values(by=['Durasi(Menit)'])
+    df_sel2 = df[['Gross_US', 'Gross_World', 'Durasi(Menit)', 'Budget', 'Rating']].sort_values(by=['Durasi(Menit)'])
 
-    # Drop rows with all zeros
-    hsl = df_sel2.loc[(df_sel2[['Gross_US', 'Gross_World']] != 0).all(axis=1)]
+    # Drop rows with missing values
+    df_sel2.dropna(subset=['Gross_US', 'Gross_World'], inplace=True)
 
     # Scale down the numbers in columns
-    hsl['Gross_US'] = hsl['Gross_US'] / 1000000
-    hsl['Gross_World'] = hsl['Gross_World'] / 1000000
-    hsl['Budget'] = hsl['Budget'] / 1000000
+    df_sel2['Gross_US'] = df_sel2['Gross_US'] / 1000000
+    df_sel2['Gross_World'] = df_sel2['Gross_World'] / 1000000
+    df_sel2['Budget'] = df_sel2['Budget'] / 1000000
 
     # Prepare the data for plotting
-    chart_data2 = pd.DataFrame(hsl, columns=["Gross_US", "Gross_World", "Durasi(Menit)", "Budget", "Rating"])
+    chart_data2 = pd.DataFrame(df_sel2, columns=["Gross_US", "Gross_World", "Durasi(Menit)", "Budget", "Rating"])
 
     # SCATTER PLOT
     st.scatter_chart(
         chart_data2, 
         x='Durasi(Menit)',
-        y=['Budget','Gross_US'],
+        y=['Budget', 'Gross_US'],
         size='Gross_World',
         color=['#FF0000', '#0000FF']
     )
 
     # 3. COMPOSITION CHART - DONUT CHART
     st.write("3. COMPOSITION CHART - DONUT CHART")
-    df_sel3 = df[['Gross_US','Gross_World','Budget','Rating']].sort_values(by=['Rating'])
+    df_sel3 = df[['Gross_US', 'Gross_World', 'Budget', 'Rating']].sort_values(by=['Rating'])
 
-    # Drop rows with all zeros
-    hsl = df_sel3.loc[(df_sel3[['Gross_US', 'Gross_World']] != 0).all(axis=1)]
-    hsl = hsl.groupby(['Rating']).sum()
+    # Drop rows with missing values
+    df_sel3.dropna(subset=['Gross_US', 'Gross_World'], inplace=True)
+
+    # Group by Rating and sum up values
+    hsl = df_sel3.groupby(['Rating']).sum()
 
     # Creating plot
     fig = plt.figure(figsize=(10, 7))
@@ -123,7 +125,7 @@ try:
     st.line_chart(
         chart_data2, 
         x='Durasi(Menit)',
-        y=['Budget','Gross_US'],
+        y=['Budget', 'Gross_US'],
         color=['#FF0000', '#0000FF']
     )
 
