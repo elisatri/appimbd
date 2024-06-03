@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service
@@ -54,33 +55,33 @@ def fetch_imdb_data():
         browser.get(my_url)
 
         # ACTION 1
-        first_page = BeautifulSoup(browser.page_source ,'html.parser')
-        movies = first_page.find_all("div", {"class":"sc-b189961a-0 hBZnfJ"})
+        first_page = BeautifulSoup(browser.page_source, 'html.parser')
+        movies = first_page.find_all("div", {"class": "sc-b189961a-0 hBZnfJ"})
 
         count2 = 0
         for movie in movies:
             count2 += 1
             menit = 0
             rating = "Not Rated"
-            name = re.sub(r"\d+. ","", movie.find("h3", {"class": "ipc-title__text"}).text)
+            name = re.sub(r"\d+. ", "", movie.find("h3", {"class": "ipc-title__text"}).text)
             detil_line = movie.findAll("span", {"class": "sc-b189961a-8 kLaxqf dli-title-metadata-item"})
             if len(detil_line) > 2:
                 year_movie = detil_line[0].text
                 durasi = detil_line[1].text
                 durasi = durasi.split(" ")
                 if len(durasi) > 1:
-                    menit = int(durasi[0].replace("h","")) * 60 + int(durasi[1].replace("m",""))
+                    menit = int(durasi[0].replace("h", "")) * 60 + int(durasi[1].replace("m", ""))
                 else:
-                    menit = int(durasi[0].replace("h","")) * 60
+                    menit = int(durasi[0].replace("h", "")) * 60
                 rating = detil_line[2].text
             elif len(detil_line) > 1:
                 year_movie = detil_line[0].text
                 durasi = detil_line[1].text
                 durasi = durasi.split(" ")
                 if len(durasi) > 1:
-                    menit = int(durasi[0].replace("h","")) * 60 + int(durasi[1].replace("m",""))
+                    menit = int(durasi[0].replace("h", "")) * 60 + int(durasi[1].replace("m", ""))
                 else:
-                    menit = int(durasi[0].replace("h","")) * 60
+                    menit = int(durasi[0].replace("h", "")) * 60
             else:
                 year_movie = detil_line[0].text
 
@@ -91,15 +92,15 @@ def fetch_imdb_data():
 
         count = 0
         for link in links:
-            title = re.sub(r"\d+. ","", link.find_element(By.CSS_SELECTOR, "a").get_attribute('aria-label'))
+            title = re.sub(r"\d+. ", "", link.find_element(By.CSS_SELECTOR, "a").get_attribute('aria-label'))
             browser2.get(link.find_element(By.CSS_SELECTOR, "a").get_attribute('href'))
 
             # BOX OFFICE DATA ON THE 2ND URL
             det_page = browser2.page_source
             container_rows = BeautifulSoup(det_page, "html.parser")
-            box_office_elements = container_rows.find("div",{"data-testid":"title-boxoffice-section"})
+            box_office_elements = container_rows.find("div", {"data-testid": "title-boxoffice-section"})
             if box_office_elements is not None:
-                det_movie = box_office_elements.find_all("span",{"class":"ipc-metadata-list-item__list-content-item"})
+                det_movie = box_office_elements.find_all("span", {"class": "ipc-metadata-list-item__list-content-item"})
 
                 if len(det_movie) > 4:
                     budget = det_movie[0].text
@@ -108,13 +109,15 @@ def fetch_imdb_data():
                     open_week_date = det_movie[3].text
                     gross_world = det_movie[4].text
 
-                    budget_num = int(re.sub("[A-Z£€₹$,()a-z]","",budget))
-                    gross_us_num = int(re.sub("[A-Z£€₹$,()a-z]","",gross_us))
-                    open_week_rev_num = int(re.sub("[A-Z£€₹$,()a-z]","",open_week_rev))
+                    budget_num = int(re.sub("[A-Z£€₹$,()a-z]", "", budget))
+                    gross_us_num = int(re.sub("[A-Z£€₹$,()a-z]", "", gross_us))
+                    open_week_rev_num = int(re.sub("[A-Z£€₹$,()a-z]", "", open_week_rev))
                     open_week_date_std = datetime.strptime(open_week_date, "%b %d, %Y")
-                    gross_world_num = int(re.sub("[A-Z£€₹$,()a-z]","",gross_world))
+                    gross_world_num = int(re.sub("[A-Z£€₹$,()a-z]", "", gross_world))
 
-                    f2.write(str(title) + "," + str(budget_num) + "," + str(gross_us_num) + "," + str(open_week_rev_num) + "," + str(open_week_date_std) + "," + str(gross_world_num) + "\n")
+                    f2.write(
+                        str(title) + "," + str(budget_num) + "," + str(gross_us_num) + "," + str(open_week_rev_num) + "," + str(
+                            open_week_date_std) + "," + str(gross_world_num) + "\n")
 
     except Exception as E:
         st.error(f"Error: {E}")
