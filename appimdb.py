@@ -89,7 +89,7 @@ elif page == "List of Films":
     # Display list of films from imdb_primary_data.csv
     st.title("List of Films")
     primary_data = pd.read_csv('imdb_primary_data.csv')
-    film_selection = st.selectbox("Select a film", primary_data['Name'].tolist())
+    film_selection = st.radio("Select a film", primary_data['Name'].tolist())
 
     # Get the link to the movie detail page from secondary data
     secondary_data = pd.read_csv('imdb_secondary_data.csv')
