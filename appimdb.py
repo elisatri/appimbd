@@ -137,20 +137,23 @@ st.title("IMDb Movie Data")
 # Read primary data
 primary_df = read_primary_data()
 
-# Display primary data as list
+# Display primary data as list with links to secondary data
 st.subheader("Primary Data")
 for index, row in primary_df.iterrows():
-    st.write(f"{row['Name']} ({row['Year']}) - Duration: {row['Durasi(Menit)']} minutes, Rating: {row['Rating']}")
+    details = f"Year: {row['Year']}, Duration: {row['Durasi(Menit)']} minutes, Rating: {row['Rating']}"
+    if st.button(f"{row['Name']} ({details})", key=f"primary_{index}"):
+        selected_movie = row['Name']
+        selected_year = row['Year']
+        selected_duration = row['Durasi(Menit)']
+        selected_rating = row['Rating']
 
 # Read secondary data
 secondary_df = read_secondary_data()
 
-# Display secondary data as list with clickable titles
-st.subheader("Secondary Data")
-for index, row in secondary_df.iterrows():
-    if st.button(f"{row['Name']}"):
-        st.write(f"**Budget**: {row['Budget']}")
-        st.write(f"**Gross US**: {row['Gross_US']}")
-        st.write(f"**Opening Week**: {row['Opening_Week']} (Date: {row['Open_Week_Date']})")
-        st.write(f"**Gross World**: {row['Gross_World']}")
-
+# Display secondary data for the selected movie
+st.subheader(f"Secondary Data for {selected_movie}")
+selected_movie_data = secondary_df[secondary_df['Name'] == selected_movie].iloc[0]
+st.write(f"*Budget*: {selected_movie_data['Budget']}")
+st.write(f"*Gross US*: {selected_movie_data['Gross_US']}")
+st.write(f"*Opening Week*: {selected_movie_data['Opening_Week']} (Date: {selected_movie_data['Open_Week_Date']})")
+st.write(f"*Gross World*: {selected_movie_data['Gross_World']}")
