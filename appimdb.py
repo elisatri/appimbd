@@ -148,7 +148,9 @@ secondary_df = read_secondary_data()
 # Display secondary data as list with clickable titles
 st.subheader("Secondary Data")
 for index, row in secondary_df.iterrows():
-    if st.button(f"{row['Name']}"):
+    # Display the movie title and details
+    details = f"Year: {row['Year']}, Duration: {row['Durasi(Menit)']} minutes, Rating: {row['Rating']}"
+    if st.button(f"{row['Name']} ({details})"):
         st.write(f"**Budget**: {row['Budget']}")
         st.write(f"**Gross US**: {row['Gross_US']}")
         st.write(f"**Opening Week**: {row['Opening_Week']} (Date: {row['Open_Week_Date']})")
