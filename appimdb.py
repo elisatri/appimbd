@@ -147,13 +147,13 @@ for index, row in primary_df.iterrows():
         selected_duration = row['Durasi(Menit)']
         selected_rating = row['Rating']
 
-# Read secondary data
-secondary_df = read_secondary_data()
+        # Read secondary data
+        secondary_df = read_secondary_data()
 
-# Display secondary data for the selected movie
-st.subheader(f"Secondary Data for {selected_movie}")
-selected_movie_data = secondary_df[secondary_df['Name'] == selected_movie].iloc[0]
-st.write(f"*Budget*: {selected_movie_data['Budget']}")
-st.write(f"*Gross US*: {selected_movie_data['Gross_US']}")
-st.write(f"*Opening Week*: {selected_movie_data['Opening_Week']} (Date: {selected_movie_data['Open_Week_Date']})")
-st.write(f"*Gross World*: {selected_movie_data['Gross_World']}")
+        # Display secondary data for the selected movie
+        st.subheader(f"Secondary Data for {selected_movie}")
+        selected_movie_data = secondary_df[secondary_df['Name'] == selected_movie].iloc[0]
+        st.write(f"*Budget*: {selected_movie_data['Budget']}")
+        st.write(f"*Gross US*: {selected_movie_data['Gross_US']}")
+        st.write(f"*Opening Week*: {selected_movie_data['Opening_Week']} (Date: {selected_movie_data['Open_Week_Date']})")
+        st.write(f"*Gross World*: {selected_movie_data['Gross_World']}")
